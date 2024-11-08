@@ -216,7 +216,7 @@ AVAILABLE_EPISODES = [
 # recall_model.load_indices()
 
 
-@app.route('/recall/long_term', methods=['GET'])
+@app.route('/recall/long_term', methods=['POST'])
 def long_term_recall():
     user_id = request.args.get('user_id')
     top_k = int(request.args.get('top_k', 10))
@@ -228,7 +228,7 @@ def long_term_recall():
         return jsonify([])
 
 
-@app.route('/recall/short_term', methods=['GET'])
+@app.route('/recall/short_term', methods=['POST'])
 def short_term_recall():
     user_id = request.args.get('user_id')
     top_k = int(request.args.get('top_k', 10))
@@ -240,7 +240,7 @@ def short_term_recall():
         return jsonify([])
 
 
-@app.route('/recall/random_fake', methods=['GET'])
+@app.route('/recall/random_fake', methods=['POST'])
 def random_fake_recall():
     user_id = request.args.get('user_id')
     top_k = int(request.args.get('top_k', 10))
