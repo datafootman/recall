@@ -1,42 +1,55 @@
 from flask import Flask, request, jsonify
-from concurrent.futures import ThreadPoolExecutor
-from models import RecallModel, recall_interface, read_data, update_matrices
+import random
 
 app = Flask(__name__)
-model = RecallModel(num_users=1000000, num_items=100000, long_term_decay=0.99, short_term_decay=0.9)
-executor = ThreadPoolExecutor(max_workers=10)  # 控制并发数量
+
+# 假设这些是可用的episode_key
+AVAILABLE_EPISODES = ["059cQQsbyk", "A12bCQWxyz", "B34dPDQwrl", "C56fQRTyui", "D78gSTUvwx"]
+
+# # 实例化RecallModel
+# storage_dir = '/path/to/storage'
+# recall_model = RecallModel(long_term_decay=0.9, short_term_decay=0.7, storage_dir=storage_dir)
+#
+# # 加载之前的矩阵和indices
+# recall_model.load_matrices()
+# recall_model.load_indices()
 
 
-@app.route('/cf_recall', methods=['POST'])
-def cf_recall():
-    user_id = int(request.args.get('user_id'))
+@app.route('/recall/long_term', methods=['GET'])
+def long_term_recall():
+    user_id = request.args.get('user_id')
     top_k = int(request.args.get('top_k', 10))
-    future = executor.submit(recall_interface, model, user_id, top_k)
-    recommendations = future.result()
-    return jsonify(recommendations)
+
+    if user_id:
+        result = recall_model.recall(user_id, top_k)
+        return jsonify(result['long_term_recall'])
+    else:
+        return jsonify([])
 
 
-@app.route('/update', methods=['POST'])
-def update():
-    executor.submit(update_matrices, model)
-    return jsonify({"status": "update in progress"}), 202
+@app.route('/recall/short_term', methods=['GET'])
+def short_term_recall():
+    user_id = request.args.get('user_id')
+    top_k = int(request.args.get('top_k', 10))
+
+    if user_id:
+        result = recall_model.recall(user_id, top_k)
+        return jsonify(result['short_term_recall'])
+    else:
+        return jsonify([])
 
 
-@app.route('/save', methods=['POST'])
-def save():
-    long_term_path = request.form.get('long_term_path')
-    short_term_path = request.form.get('short_term_path')
-    executor.submit(model.save_matrices, long_term_path, short_term_path)
-    return jsonify({"status": "save in progress"}), 202
+@app.route('/recall/random_fake', methods=['GET'])
+def random_fake_recall():
+    user_id = request.args.get('user_id')
+    top_k = int(request.args.get('top_k', 10))
+
+    if user_id:
+        random_episodes = random.sample(AVAILABLE_EPISODES, min(top_k, len(AVAILABLE_EPISODES)))
+        return jsonify(random_episodes)
+    else:
+        return jsonify([])
 
 
-@app.route('/load', methods=['POST'])
-def load():
-    long_term_path = request.form.get('long_term_path')
-    short_term_path = request.form.get('short_term_path')
-    executor.submit(model.load_matrices, long_term_path, short_term_path)
-    return jsonify({"status": "load in progress"}), 202
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8013, threaded=True)
